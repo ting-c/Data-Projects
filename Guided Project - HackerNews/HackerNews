@@ -1,0 +1,631 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "collapsed": true
+   },
+   "source": [
+    "# Hacker News\n",
+    "\n",
+    "Hacker News is a site started by the startup incubator Y Combinator, where user-submitted stories (known as \"posts\") are voted and commented upon, similar to reddit. Hacker News is extremely popular in technology and startup circles, and posts that make it to the top of Hacker News' listings can get hundreds of thousands of visitors as a result.\n",
+    "\n",
+    "We're specifically interested in posts whose titles begin with either Ask HN or Show HN. Users submit Ask HN posts to ask the Hacker News community a specific question. Likewise, users submit Show HN posts to show the Hacker News community a project, product, or just generally something interesting."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "['id', 'title', 'url', 'num_points', 'num_comments', 'author', 'created_at']\n",
+      "\n",
+      "\n",
+      "['12224879', 'Interactive Dynamic Video', 'http://www.interactivedynamicvideo.com/', '386', '52', 'ne0phyte', '8/4/2016 11:52']\n",
+      "\n",
+      "\n",
+      "['10975351', 'How to Use Open Source and Shut the Fuck Up at the Same Time', 'http://hueniverse.com/2016/01/26/how-to-use-open-source-and-shut-the-fuck-up-at-the-same-time/', '39', '10', 'josep2', '1/26/2016 19:30']\n",
+      "\n",
+      "\n",
+      "['11964716', \"Florida DJs May Face Felony for April Fools' Water Joke\", 'http://www.thewire.com/entertainment/2013/04/florida-djs-april-fools-water-joke/63798/', '2', '1', 'vezycash', '6/23/2016 22:20']\n",
+      "\n",
+      "\n",
+      "['11919867', 'Technology ventures: From Idea to Enterprise', 'https://www.amazon.com/Technology-Ventures-Enterprise-Thomas-Byers/dp/0073523429', '3', '1', 'hswarna', '6/17/2016 0:01']\n",
+      "\n",
+      "\n"
+     ]
+    }
+   ],
+   "source": [
+    "from csv import reader\n",
+    "opened_file = open('hacker_news.csv')\n",
+    "read_file = reader(opened_file)\n",
+    "hn = list(read_file)\n",
+    "\n",
+    "for row in hn[:5]:\n",
+    "    print(row)\n",
+    "    print('\\n')\n",
+    "    \n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Notice that the first list in the inner lists contains the column headers, and the lists after contain the data for one row. In order to analyze our data, we need to first remove the row containing the column headers. Let's remove that first row next."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "['id', 'title', 'url', 'num_points', 'num_comments', 'author', 'created_at']\n",
+      "\n",
+      "\n",
+      "['12224879', 'Interactive Dynamic Video', 'http://www.interactivedynamicvideo.com/', '386', '52', 'ne0phyte', '8/4/2016 11:52']\n",
+      "\n",
+      "\n",
+      "['10975351', 'How to Use Open Source and Shut the Fuck Up at the Same Time', 'http://hueniverse.com/2016/01/26/how-to-use-open-source-and-shut-the-fuck-up-at-the-same-time/', '39', '10', 'josep2', '1/26/2016 19:30']\n",
+      "\n",
+      "\n",
+      "['11964716', \"Florida DJs May Face Felony for April Fools' Water Joke\", 'http://www.thewire.com/entertainment/2013/04/florida-djs-april-fools-water-joke/63798/', '2', '1', 'vezycash', '6/23/2016 22:20']\n",
+      "\n",
+      "\n",
+      "['11919867', 'Technology ventures: From Idea to Enterprise', 'https://www.amazon.com/Technology-Ventures-Enterprise-Thomas-Byers/dp/0073523429', '3', '1', 'hswarna', '6/17/2016 0:01']\n",
+      "\n",
+      "\n",
+      "['10301696', 'Note by Note: The Making of Steinway L1037 (2007)', 'http://www.nytimes.com/2007/11/07/movies/07stein.html?_r=0', '8', '2', 'walterbell', '9/30/2015 4:12']\n",
+      "\n",
+      "\n"
+     ]
+    }
+   ],
+   "source": [
+    "headers = hn[0]\n",
+    "hn = hn[1:]\n",
+    "print(headers)\n",
+    "print('\\n')\n",
+    "for row in hn[:5]:\n",
+    "    print(row)\n",
+    "    print('\\n')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now that we've removed the headers from hn, we're ready to filter our data. Since we're only concerned with post titles beginning with Ask HN or Show HN, we'll create new lists of lists containing just the data for those titles. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "1744\n",
+      "1162\n",
+      "17194\n"
+     ]
+    }
+   ],
+   "source": [
+    "ask_posts = []\n",
+    "show_posts = []\n",
+    "other_posts = []\n",
+    "\n",
+    "for row in hn:\n",
+    "    title = row[1]\n",
+    "    title = title.lower()\n",
+    "    if title.startswith('ask hn'):\n",
+    "        ask_posts.append(row)\n",
+    "    elif title.startswith('show hn'):\n",
+    "        show_posts.append(row)\n",
+    "    else:\n",
+    "        other_posts.append(row)\n",
+    "        \n",
+    "print(len(ask_posts))\n",
+    "print(len(show_posts))\n",
+    "print(len(other_posts))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Ask posts : 1744\n",
+    "Show posts : 1162\n",
+    "Other posts : 17194\n",
+    "\n",
+    "Let's print some rows of each list to check if it has been done correctly.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[['12296411', 'Ask HN: How to improve my personal website?', '', '2', '6', 'ahmedbaracat', '8/16/2016 9:55'], ['10610020', 'Ask HN: Am I the only one outraged by Twitter shutting down share counts?', '', '28', '29', 'tkfx', '11/22/2015 13:43']]\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(ask_posts[:2])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[['10627194', 'Show HN: Wio Link  ESP8266 Based Web of Things Hardware Development Platform', 'https://iot.seeed.cc', '26', '22', 'kfihihc', '11/25/2015 14:03'], ['10646440', 'Show HN: Something pointless I made', 'http://dn.ht/picklecat/', '747', '102', 'dhotson', '11/29/2015 22:46']]\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(show_posts[:2])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[['12224879', 'Interactive Dynamic Video', 'http://www.interactivedynamicvideo.com/', '386', '52', 'ne0phyte', '8/4/2016 11:52'], ['10975351', 'How to Use Open Source and Shut the Fuck Up at the Same Time', 'http://hueniverse.com/2016/01/26/how-to-use-open-source-and-shut-the-fuck-up-at-the-same-time/', '39', '10', 'josep2', '1/26/2016 19:30']]\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(other_posts[:2])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Next, let's determine if ask posts or show posts receive more comments on average."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "14.04\n"
+     ]
+    }
+   ],
+   "source": [
+    "total_ask_comments = 0\n",
+    "\n",
+    "for row in ask_posts:\n",
+    "    num_comments = row[4]\n",
+    "    total_ask_comments += int(num_comments)\n",
+    "    \n",
+    "avg_ask_comments = total_ask_comments / len(ask_posts)\n",
+    "print(round(avg_ask_comments,2))\n",
+    "    "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "10.32\n"
+     ]
+    }
+   ],
+   "source": [
+    "total_show_comments = 0\n",
+    "\n",
+    "for row in show_posts:\n",
+    "    num_comments = row[4]\n",
+    "    total_show_comments += int(num_comments)\n",
+    "    \n",
+    "avg_show_comments = total_show_comments / len(show_posts)\n",
+    "print(round(avg_show_comments,2))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "On average, ask posts receive almost 4 comments more than show post.\n",
+    "\n",
+    "Since ask posts are more likely to receive comments, we'll focus our remaining analysis just on these posts. \n",
+    "\n",
+    "Next, we'll determine if ask posts created at a certain time are more likely to attract comments. We'll use the following steps to perform this analysis:\n",
+    "\n",
+    "- Calculate the amount of ask posts created in each hour of the day, along with the number of comments received.\n",
+    "- Calculate the average number of comments ask posts receive by hour created.\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### The amount of ask posts and comments by hour created\n",
+    "\n",
+    "Let's created a dictionary that contains the hour and frequency.\n",
+    "\n",
+    "We'll use the datetime module to work with the data in the created_at column. We can use the datetime.strptime() constructor to parse dates stored as strings and return datetime objects:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {
+    "collapsed": false,
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[['8/16/2016 9:55', 6], ['11/22/2015 13:43', 29], ['5/2/2016 10:14', 1], ['8/2/2016 14:20', 3], ['10/15/2015 16:38', 17]]\n",
+      "1744\n"
+     ]
+    }
+   ],
+   "source": [
+    "import datetime as dt\n",
+    "result_list = []  #this will be a list of lists\n",
+    "\n",
+    "for row in ask_posts:\n",
+    "    created_at = row[-1]\n",
+    "    num_comments = int(row[4])\n",
+    "    result_list.append([created_at, num_comments])\n",
+    "    \n",
+    "print(result_list[:5])\n",
+    "print(len(result_list))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "{'19': 110, '23': 68, '16': 108, '22': 71, '20': 80, '06': 44, '04': 47, '07': 34, '03': 54, '01': 60, '13': 85, '12': 73, '10': 59, '00': 55, '02': 58, '15': 116, '11': 58, '14': 107, '08': 48, '18': 109, '09': 45, '05': 46, '17': 100, '21': 109}\n",
+      "\n",
+      "\n",
+      "{'19': 1188, '23': 543, '16': 1814, '22': 479, '20': 1722, '06': 397, '04': 337, '07': 267, '03': 421, '01': 683, '13': 1253, '12': 687, '10': 793, '00': 447, '02': 1381, '15': 4477, '11': 641, '14': 1416, '08': 492, '18': 1439, '09': 251, '05': 464, '17': 1146, '21': 1745}\n"
+     ]
+    }
+   ],
+   "source": [
+    "counts_by_hour = {} \n",
+    "comments_by_hour = {}\n",
+    "\n",
+    "for row in result_list:\n",
+    "    comments = int(row[1])\n",
+    "    date_string = row[0]\n",
+    "    date = dt.datetime.strptime(date_string, \"%m/%d/%Y %H:%M\")# to parse the date and create a datetime object\n",
+    "    hour = dt.datetime.strftime(date, \"%H\")# format datetime to string for hour only\n",
+    "    if hour in counts_by_hour:\n",
+    "        counts_by_hour[hour] += 1\n",
+    "        comments_by_hour[hour] += comments\n",
+    "        \n",
+    "    else:\n",
+    "        counts_by_hour[hour] = 1\n",
+    "        comments_by_hour[hour] = comments\n",
+    "        \n",
+    "print(counts_by_hour)\n",
+    "print('\\n')\n",
+    "print(comments_by_hour)\n",
+    "    \n",
+    "    "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We can see the highest number of comments were posted around 4pm to 6pm. One possible reason for that is because most people are off work and have time to read and post comments when they are travelling home."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### The average number of comments ask posts receive by hour created.\n",
+    "\n",
+    "we'll use these two dictionaries to calculate the average number of comments for posts created during each hour of the day. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[['19', 10.8],\n",
+       " ['23', 7.99],\n",
+       " ['16', 16.8],\n",
+       " ['22', 6.75],\n",
+       " ['20', 21.52],\n",
+       " ['06', 9.02],\n",
+       " ['04', 7.17],\n",
+       " ['07', 7.85],\n",
+       " ['03', 7.8],\n",
+       " ['01', 11.38],\n",
+       " ['13', 14.74],\n",
+       " ['12', 9.41],\n",
+       " ['10', 13.44],\n",
+       " ['00', 8.13],\n",
+       " ['02', 23.81],\n",
+       " ['15', 38.59],\n",
+       " ['11', 11.05],\n",
+       " ['14', 13.23],\n",
+       " ['08', 10.25],\n",
+       " ['18', 13.2],\n",
+       " ['09', 5.58],\n",
+       " ['05', 10.09],\n",
+       " ['17', 11.46],\n",
+       " ['21', 16.01]]"
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "avg_by_hour = []\n",
+    "\n",
+    "for comment in comments_by_hour:\n",
+    "    average = comments_by_hour[comment]/counts_by_hour[comment]\n",
+    "    avg_by_hour.append([comment, round(average, 2)])\n",
+    "    \n",
+    "avg_by_hour"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's sort the list of lists and printing the five highest values in a format that's easier to read. \n",
+    "\n",
+    "First we need to swap the columns to apply sorted function."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[[10.8, '19'],\n",
+       " [7.99, '23'],\n",
+       " [16.8, '16'],\n",
+       " [6.75, '22'],\n",
+       " [21.52, '20'],\n",
+       " [9.02, '06'],\n",
+       " [7.17, '04'],\n",
+       " [7.85, '07'],\n",
+       " [7.8, '03'],\n",
+       " [11.38, '01'],\n",
+       " [14.74, '13'],\n",
+       " [9.41, '12'],\n",
+       " [13.44, '10'],\n",
+       " [8.13, '00'],\n",
+       " [23.81, '02'],\n",
+       " [38.59, '15'],\n",
+       " [11.05, '11'],\n",
+       " [13.23, '14'],\n",
+       " [10.25, '08'],\n",
+       " [13.2, '18'],\n",
+       " [5.58, '09'],\n",
+       " [10.09, '05'],\n",
+       " [11.46, '17'],\n",
+       " [16.01, '21']]"
+      ]
+     },
+     "execution_count": 16,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# create a list that equals avg_by_hour with swapped columns\n",
+    "\n",
+    "swap_avg_by_hour = []\n",
+    "for row in avg_by_hour:\n",
+    "    new_row1 = row[0]\n",
+    "    new_row0 = row[1]\n",
+    "    swap_avg_by_hour.append([new_row0, new_row1])\n",
+    "    \n",
+    "swap_avg_by_hour\n",
+    "    "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "[[38.59, '15'],\n",
+       " [23.81, '02'],\n",
+       " [21.52, '20'],\n",
+       " [16.8, '16'],\n",
+       " [16.01, '21'],\n",
+       " [14.74, '13'],\n",
+       " [13.44, '10'],\n",
+       " [13.23, '14'],\n",
+       " [13.2, '18'],\n",
+       " [11.46, '17'],\n",
+       " [11.38, '01'],\n",
+       " [11.05, '11'],\n",
+       " [10.8, '19'],\n",
+       " [10.25, '08'],\n",
+       " [10.09, '05'],\n",
+       " [9.41, '12'],\n",
+       " [9.02, '06'],\n",
+       " [8.13, '00'],\n",
+       " [7.99, '23'],\n",
+       " [7.85, '07'],\n",
+       " [7.8, '03'],\n",
+       " [7.17, '04'],\n",
+       " [6.75, '22'],\n",
+       " [5.58, '09']]"
+      ]
+     },
+     "execution_count": 23,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "sorted_swap = sorted(swap_avg_by_hour, reverse = True)\n",
+    "sorted_swap"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 27,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Top 5 Hours for 'Ask HN' Comments\n",
+      "15:00   :   38.59 average comments per post\n",
+      "02:00   :   23.81 average comments per post\n",
+      "20:00   :   21.52 average comments per post\n",
+      "16:00   :   16.8 average comments per post\n",
+      "21:00   :   16.01 average comments per post\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Sort the values and print the the 5 hours with the highest average comments.\n",
+    "\n",
+    "print(\"Top 5 Hours for 'Ask HN' Comments\")\n",
+    "\n",
+    "for hour in sorted_swap[:5]:\n",
+    "    print (\"{}:00   :   {} average comments per post\".format(hour[1], hour[0]) )"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The hour that receives the most comments  on average per post is 15:00, averaging 38.59 comments per post. There's more than 50% increase in the number of comments between the hours with the highest and second highest average number of comments.\n",
+    "\n",
+    "According to the data set [documentation](https://www.kaggle.com/hacker-news/hacker-news-posts/home), the timezone used is Eastern Time in the US. So, we could also write 15:00 as 3:00 pm EST.\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Conclusion\n",
+    "\n",
+    "We analysed ask posts and show posts to determine which type of post and time received the most comments on average. Based on our analysis, to maximise the amount of comments a post receives, we'd recommend the post be categorised as ask post and created between 15:00 and 16:00 (3:00 pm est - 4:00 pm est).\n",
+    "\n",
+    "It should be noted that the data set we analyzed excluded posts without any comments. Given that, it's more accurate to say that of the posts that received comments. Majority of ask posts were created between 15:00 and 16:00 (3:00 pm est - 4:00 pm est) and received the most comments on average."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.4.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
